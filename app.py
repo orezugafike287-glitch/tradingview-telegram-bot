@@ -51,7 +51,16 @@ def home():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return "OK", 200
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv("CHAT_ID")
+
+    return jsonify({
+        "ok": True,
+        "BOT_TOKEN_EXISTS": bool(BOT_TOKEN),
+        "BOT_TOKEN_LENGTH": len(BOT_TOKEN) if BOT_TOKEN else 0,
+        "CHAT_ID_EXISTS": bool(CHAT_ID),
+        "CHAT_ID": CHAT_ID
+    }), 200
 
 
 @app.route("/webhook", methods=["POST"])
@@ -72,19 +81,12 @@ def webhook():
 
     MESSAGE = ""
 
-    # Вариант 1: TradingView прислал JSON {"text": "..."}
     if isinstance(DATA, dict) and "text" in DATA:
         MESSAGE = str(DATA["text"])
-
-    # Вариант 2: TradingView прислал JSON, но без поля text
     elif DATA:
         MESSAGE = "TradingView alert:\n" + str(DATA)
-
-    # Вариант 3: TradingView прислал обычный текст
     elif RAW_TEXT:
         MESSAGE = RAW_TEXT
-
-    # Вариант 4: пустое тело
     else:
         MESSAGE = "Empty TradingView alert"
 
