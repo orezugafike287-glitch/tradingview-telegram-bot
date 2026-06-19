@@ -6,11 +6,17 @@ import time
 
 app = Flask(__name__)
 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+
+print("STARTUP BOT_TOKEN_EXISTS:", bool(BOT_TOKEN))
+print("STARTUP BOT_TOKEN_LENGTH:", len(BOT_TOKEN) if BOT_TOKEN else 0)
+print("STARTUP CHAT_ID_EXISTS:", bool(CHAT_ID))
+print("STARTUP CHAT_ID:", CHAT_ID)
+
 
 def send_telegram_message(TEXT, ATTEMPTS=3):
-    BOT_TOKEN = os.getenv("8368601575:AAG7tj_TwGXP9opi_t9XDUA6omflEipqi7E")
-    CHAT_ID = os.getenv("5023516508")
-
     if not BOT_TOKEN:
         print("Telegram error: BOT_TOKEN is missing")
         return
@@ -51,9 +57,6 @@ def home():
 
 @app.route("/health", methods=["GET"])
 def health():
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv("CHAT_ID")
-
     return jsonify({
         "ok": True,
         "BOT_TOKEN_EXISTS": bool(BOT_TOKEN),
@@ -65,8 +68,6 @@ def health():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
-
     if WEBHOOK_SECRET:
         RECEIVED_SECRET = request.args.get("secret")
 
@@ -78,8 +79,6 @@ def webhook():
 
     DATA = request.get_json(silent=True)
     RAW_TEXT = request.data.decode("utf-8").strip()
-
-    MESSAGE = ""
 
     if isinstance(DATA, dict) and "text" in DATA:
         MESSAGE = str(DATA["text"])
