@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 
 def send_telegram_message(text, attempts=3):
-    bot_token = os.getenv("8368601575:AAG7tj_TwGXP9opi_t9XDUA6omflEipqi7E")
-    chat_id = os.getenv("5023516508")
+    BOT_TOKEN = os.getenv("8368601575:AAG7tj_TwGXP9opi_t9XDUA6omflEipqi7E")
+    CHAT_ID = os.getenv("5023516508")
 
     if not bot_token or not chat_id:
         print("Telegram error: BOT_TOKEN or CHAT_ID is missing")
