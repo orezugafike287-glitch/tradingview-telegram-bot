@@ -1,52 +1,52 @@
 from flask import Flask, request, jsonify
 import requests
 import os
+import threading
+import time
 
 app = Flask(__name__)
 
 
-def send_telegram_message(text):
+def send_telegram_message(text, attempts=3):
     bot_token = os.getenv("8368601575:AAG7tj_TwGXP9opi_t9XDUA6omflEipqi7E")
     chat_id = os.getenv("5023516508")
 
-    if not bot_token:
-        return {
-            "ok": False,
-            "error": "BOT_TOKEN is missing"
-        }
-
-    if not chat_id:
-        return {
-            "ok": False,
-            "error": "CHAT_ID is missing"
-        }
+    if not bot_token or not chat_id:
+        print("Telegram error: BOT_TOKEN or CHAT_ID is missing")
+        return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
-    try:
-        response = requests.post(
-            url,
-            json={
-                "chat_id": chat_id,
-                "text": text
-            },
-            timeout=2.5
-        )
-
+    for attempt in range(1, attempts + 1):
         try:
-            return response.json()
-        except Exception:
-            return {
-                "ok": False,
-                "status_code": response.status_code,
-                "response_text": response.text
-            }
+            response = requests.post(
+                url,
+                json={
+                    "chat_id": chat_id,
+                    "text": text
+                },
+                timeout=10
+            )
 
-    except Exception as error:
-        return {
-            "ok": False,
-            "error": str(error)
-        }
+            try:
+                result = response.json()
+            except Exception:
+                result = {
+                    "ok": False,
+                    "status_code": response.status_code,
+                    "text": response.text
+                }
+
+            print(f"Telegram attempt {attempt}:", result)
+
+            if result.get("ok") is True:
+                return
+
+        except Exception as error:
+            print(f"Telegram attempt {attempt} failed:", str(error))
+
+        if attempt < attempts:
+            time.sleep(5)
 
 
 @app.route("/", methods=["GET"])
@@ -65,7 +65,6 @@ def webhook():
 
     if webhook_secret:
         received_secret = request.args.get("secret")
-
         if received_secret != webhook_secret:
             return jsonify({
                 "ok": False,
@@ -85,22 +84,18 @@ def webhook():
     if not message:
         message = "Empty TradingView alert"
 
-    print("Received TradingView message:", message)
+    print("Received webhook message:", message)
 
-    telegram_result = send_telegram_message(message)
-
-    print("Telegram result:", telegram_result)
-
-    if telegram_result.get("ok") is True:
-        return jsonify({
-            "ok": True,
-            "telegram": telegram_result
-        }), 200
+    threading.Thread(
+        target=send_telegram_message,
+        args=(message,),
+        daemon=True
+    ).start()
 
     return jsonify({
-        "ok": False,
-        "telegram": telegram_result
-    }), 500
+        "ok": True,
+        "status": "received"
+    }), 200
 
 
 if __name__ == "__main__":
